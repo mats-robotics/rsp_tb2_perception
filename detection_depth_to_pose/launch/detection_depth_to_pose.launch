@@ -1,0 +1,33 @@
+<launch>
+    <!-- Parameters -->
+    <!-- Subscribe to image detection topic -->
+    <arg name="detection_topic" default="/yolov5/detections"/>
+    <!-- Subscribe to image depth topic / cannot use compressed depth now-->
+    <arg name="depth_image_topic" default="/camera/aligned_depth_to_color/image_raw"/>
+    <!-- Subscribe to rgb topic -->
+    <arg name="color_image_topic" default="/camera/color/image_raw/compressed"/>
+    <!-- Subscribe to robot pose topic -->
+    <arg name="robot_pose_topic" default="/amcl_pose"/>
+    <!-- Subscribe to camera info topic -->
+    <arg name="camera_info_topic" default="/camera/aligned_depth_to_color/camera_info"/>
+
+    <!-- Subscribe to map metadata topic -->
+    <arg name="map_metadata_topic" default="/map_metadata"/>
+    <!-- Publish objects in map -->
+    <arg name="objects_in_map_topic" default="/objects_in_map"/>
+
+
+
+
+    <node pkg="detection_depth_to_pose" name="process_2d_detections" type="detection_depth_to_pose.py" output="screen">
+        <param name="detection_topic" value="$(arg detection_topic)"/>
+        <param name="depth_image_topic" value="$(arg depth_image_topic)"/>
+        <param name="color_image_topic" value="$(arg color_image_topic)"/>
+        <param name="robot_pose_topic" value="$(arg robot_pose_topic)"/>
+        <param name="camera_info_topic" value="$(arg camera_info_topic)"/>
+        <param name="map_metadata_topic" value="$(arg map_metadata_topic)"/>
+        <param name="objects_in_map_topic" value="$(arg objects_in_map_topic)"/>
+    </node>
+
+
+</launch>
