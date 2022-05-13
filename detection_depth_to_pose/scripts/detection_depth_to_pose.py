@@ -16,7 +16,6 @@ from nav_msgs.msg import MapMetaData
 from rostopic import get_topic_type
 from cv_bridge import CvBridge
 import time
-import cv2
 import numpy as np
 
 
@@ -24,20 +23,17 @@ class Detection2Dto3D:
     def __init__(self):
         self.objects = dict()
         self.bridge = CvBridge()
-        # print(9)
         # subscribe to map metadata topic
         self.map_metadata = rospy.wait_for_message(
             rospy.get_param("~map_metadata_topic"), MapMetaData
         )
         self.process_map_metadata()
-        # print(10)
         # subscribe to camera info topic
         self.camera_info = rospy.wait_for_message(
             rospy.get_param("~camera_info_topic"), CameraInfo
         )
         self.camera_intrinsics = pyrealsense2.intrinsics()
         self.process_camera_info()
-        # print(11)
         # subscribe to get robot pose in world
         self.pose_sub = rospy.Subscriber(rospy.get_param("~robot_pose_topic"), PoseWithCovarianceStamped,self.robot_pose_callback)
         
@@ -45,7 +41,6 @@ class Detection2Dto3D:
         self.detection_sub = Subscriber(
             rospy.get_param("~detection_topic"), BoundingBoxes
         )
-        # print(7)
         # subscribe to depth image topic
         depth_image_type, depth_image_topic, _ = get_topic_type(
             rospy.get_param("~depth_image_topic"), blocking=True
@@ -121,16 +116,11 @@ class Detection2Dto3D:
         self.depth = self.bridge.imgmsg_to_cv2(depth_msg)
         self.detections = detection_msg
 
-        # preprocess robot position
-        # robot_x = pose_msg.pose.pose.position.x
-        # robot_y = pose_msg.pose.pose.position.y
-        # robot_yaw = np.arctan2(pose_msg.pose.pose.orientation.w, pose_msg.pose.pose.orientation.z)*2
-
         # return if no detection
         if self.detections.bounding_boxes is None:
             return
 
-        #
+        # process detections
         for i in range(len(self.detections.bounding_boxes)):
             bounding_box = self.detections.bounding_boxes[i]
             object_name = bounding_box.Class
@@ -148,8 +138,7 @@ class Detection2Dto3D:
             # obj pose in map unit relative to robot frame
             obj_x_map_unit = obj_x #*self.map_resolution 
             obj_y_map_unit = obj_y #*self.map_resolution 
-            # print(object_name, obj_x_map_unit, obj_y_map_unit)
-            # print(obj_x, obj_y)
+
             # obj pose in map unit relative to map frame
             obj_x_map_unit_wrt_map = np.cos(self.robot_yaw)*obj_x_map_unit - np.sin(self.robot_yaw)*obj_y_map_unit + self.robot_x
             obj_y_map_unit_wrt_map = np.sin(self.robot_yaw)*obj_x_map_unit + np.cos(self.robot_yaw)*obj_y_map_unit + self.robot_y 
@@ -162,9 +151,6 @@ class Detection2Dto3D:
         self.publish_objects()
 
     def publish_objects(self):
-        # print(1)
-        # print(self.objects)
-        # print(rospy.Time.now())
         objects_msg = ObjectsInMap()
         objects_msg.header.stamp = rospy.Time.now() 
         
@@ -197,7 +183,5 @@ class Detection2Dto3D:
 if __name__ == "__main__":
     rospy.init_node("detection_depth_to_pose", anonymous=True)
     detection_depth_to_pose = Detection2Dto3D()
-
-    # print(detection_depth_to_pose.convert_depth_to_phys_coord_using_realsense(813, 544))
 
     rospy.spin()
